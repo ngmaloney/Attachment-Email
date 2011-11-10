@@ -2,90 +2,89 @@
 /**
  * @File a mime mail attachment class used for sending emails with attachments.
  *
+ * Forked from https://github.com/ngmaloney/Attachment-Email
  * Modified from a version created at http://www.kavoir.com/2009/08/php-email-attachment-class.html
-**/
+ **/
 class AttachmentEmail {
-	private $from = '';
-	private $from_name = '';
-	private $reply_to = '';
-	private $to = '';
-	private $subject = '';
-	private $message = '';
-	private $attachment = '';
-	private $attachment_filename = '';
+  private $to = '';
+  private $from = '';
+  private $subject = '';
+  private $message = '';
+  private $attachments = '';
 
   /**
    * Function for defining email
+   *
    * @param $to
-   *    Email recipient address
+   *   Email recipient address
    * @param $from
-   *    Email sender address
+   *   Email sender address
    * @param $message
-   *    Message text of body. (currenlty plain text only)
-   * $param $attachment (optional)
-   *    An array containing attachment file name and path
-   *    array('filename' => 'attachment.pdf', 'uri' => '/tmp/attachment.pdf')
- **/
-  public function __construct($to, $from, $subject, $message, $attachment =
-  array()) {
-		$this->to = $to;
+   *   Message text of body. (currenlty plain text only)
+   * @param $attachment (optional)
+   *   An indexed array of associative arrays.
+   *   Each of the inner arrays represents a file attachment.
+   *
+   *   Example:
+   *   array(
+   *     'name' => 'attachment.pdf',
+   *     'path' => '/tmp/attachment.pdf',
+   *     'type' => 'image/gif',
+   *   )
+   **/
+  public function __construct($to, $from, $subject, $message, $attachments = array()) {
+    $this->to = $to;
     $this->from = $from;
-		$this->subject = $subject;
-		$this->message = $message;
-		$this->attachment = $attachment['uri'];
-		$this->attachment_filename = $attachment['filename'];
-	}
+    $this->subject = $subject;
+    $this->message = $message;
+    $this->attachments = $attachments;
+    $this->boundary = md5(date('r', time()));
+  }
 
   /**
-   * Hook for sending actual eamil
-  **/
+   * Hook for sending actual email
+   **/
   public function send() {
-		if (!empty($this -> attachment)) {
-			$filename = empty($this -> attachment_filename) ? basename($this -> attachment) : $this -> attachment_filename ;
-			$path = dirname($this -> attachment);
-			$mailto = $this -> to;
-			$from_mail = $this -> from;
-			$from_name = $this -> from_name;
-			$replyto = $this -> reply_to;
-			$subject = $this -> subject;
-			$message = $this -> message;
+    $header = "From: ".($this->from)." <".($this->from).">" . PHP_EOL;
+    $header .= "Reply-To: ".($this->from). PHP_EOL;
 
-      $content = file_get_contents($this->attachment);
-			$content = chunk_split(base64_encode($content));
-			$uid = md5(uniqid(time()));
-			$header = "From: " . $from_mail . "\r\n";
-			$header .= "MIME-Version: 1.0\r\n";
-			$header .= "Content-Type: multipart/mixed; boundary=\"".$uid."\"\r\n\r\n";
-			$header .= "This is a multi-part message in MIME format.\r\n";
-			$header .= "--".$uid."\r\n";
-			$header .= "Content-type:text/plain; charset=iso-8859-1\r\n";
-			$header .= "Content-Transfer-Encoding: 7bit\r\n\r\n";
-			$header .= $message."\r\n\r\n";
-			$header .= "--".$uid."\r\n";
-			$header .= "Content-Type: application/octet-stream; name=\"".$filename."\"\r\n"; // use diff. tyoes here
-			$header .= "Content-Transfer-Encoding: base64\r\n";
-			$header .= "Content-Disposition: attachment; filename=\"".$filename."\"\r\n\r\n";
-			$header .= $content."\r\n\r\n";
-			$header .= "--".$uid."--";
-			if (mail($mailto, $subject, "", $header)) {
-				return true;
-			}
-      else {
-				return false;
-			}
-		}
+    if (!empty($this->attachments)) {
+
+      $header .= "Content-Transfer-Encoding: 7bit" . PHP_EOL;
+      $header .= "Content-Type: multipart/mixed; boundary=\"". $this->boundary . '"' . PHP_EOL;
+      $header .= "MIME-Version: 1.0" . PHP_EOL;
+
+      $message = "This is a multi-part message in MIME format." . PHP_EOL . PHP_EOL;
+      $message .= "--". $this->boundary . PHP_EOL;
+      $message .= "Content-Transfer-Encoding: binary" . PHP_EOL;
+      $message .= "Content-type:text/plain; charset=iso-8859-1" . PHP_EOL . PHP_EOL;
+      $message .= $this->message . PHP_EOL;
+      $message .= $this->get_binary_attachments() . PHP_EOL;
+      $message .= '--'. $this->boundary .'--' . PHP_EOL;
+      $this->message = $message;
+    }
+
+    if (mail($this->to, $this->subject, $this->message, $header)) {
+      return true;
+    }
     else {
-			$header = "From: ".($this -> from_name)." <".($this -> from).">\r\n";
-			$header .= "Reply-To: ".($this -> reply_to)."\r\n";
+      return false;
+    }
+  }
 
-			if (mail($this -> to, $this -> subject, $this -> message, $header)) {
-				return true;
-			} else {
+  public function get_binary_attachments() {
+    $output = '';
+    foreach($this->attachments as $attachment) {
 
-				return false;
-			}
+      $attachment_bin = file_get_contents($attachment['path']);
+      $attachment_bin = chunk_split(base64_encode($attachment_bin));
 
-		}
-	}
+      $output .= '--'. $this->boundary . PHP_EOL;
+      $output .= 'Content-Type: '. $attachment['type'] .'; name="'. basename($attachment['path']) .'"' . PHP_EOL;
+      $output .= 'Content-Transfer-Encoding: base64' . PHP_EOL;
+      $output .= 'Content-Disposition: attachment' . PHP_EOL . PHP_EOL;
+      $output .= $attachment_bin . PHP_EOL . PHP_EOL;
+    }
+    return $output;
+  }
 }
-
