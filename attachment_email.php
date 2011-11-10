@@ -1,7 +1,8 @@
 <?php
 /**
- * @File a mime mail attachment class used for sending emails with attachments.
+ * @File a mime mail attachment class used for sending emails with multiple attachments.
  *
+ * Forked from https://github.com/ngmaloney/Attachment-Email
  * Modified from a version created at http://www.kavoir.com/2009/08/php-email-attachment-class.html
  **/
 class AttachmentEmail {
@@ -12,13 +13,14 @@ class AttachmentEmail {
   private $attachments = '';
 
   /**
-   * Function for defining email
+   * Constructor.
+   *
    * @param $to
    *    Email recipient address
    * @param $from
    *    Email sender address
    * @param $message
-   *    Message text of body. (currenlty plain text only)
+   *    Message text of body. (currently plain text only)
    * $param $attachment (optional)
    *    An array containing attachment file name and path
    *    array('filename' => 'attachment.pdf', 'uri' => '/tmp/attachment.pdf')
@@ -33,7 +35,7 @@ class AttachmentEmail {
   }
 
   /**
-   * Hook for sending actual email
+   * Send the email.
    **/
   public function send() {
     $header = "From: ".($this->from)." <".($this->from).">" . PHP_EOL;
@@ -63,6 +65,11 @@ class AttachmentEmail {
     }
   }
 
+  /**
+   * Get the attachments in a base64 format.
+   *
+   * @return string Returns a string representing the attachments.
+   */
   public function get_binary_attachments() {
     $output = '';
     foreach($this->attachments as $attachment) {
