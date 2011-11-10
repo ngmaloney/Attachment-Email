@@ -2,7 +2,6 @@
 /**
  * @File a mime mail attachment class used for sending emails with attachments.
  *
- * Forked from https://github.com/ngmaloney/Attachment-Email
  * Modified from a version created at http://www.kavoir.com/2009/08/php-email-attachment-class.html
  **/
 class AttachmentEmail {
@@ -14,23 +13,15 @@ class AttachmentEmail {
 
   /**
    * Function for defining email
-   *
    * @param $to
-   *   Email recipient address
+   *    Email recipient address
    * @param $from
-   *   Email sender address
+   *    Email sender address
    * @param $message
-   *   Message text of body. (currenlty plain text only)
-   * @param $attachment (optional)
-   *   An indexed array of associative arrays.
-   *   Each of the inner arrays represents a file attachment.
-   *
-   *   Example:
-   *   array(
-   *     'name' => 'attachment.pdf',
-   *     'path' => '/tmp/attachment.pdf',
-   *     'type' => 'image/gif',
-   *   )
+   *    Message text of body. (currenlty plain text only)
+   * $param $attachment (optional)
+   *    An array containing attachment file name and path
+   *    array('filename' => 'attachment.pdf', 'uri' => '/tmp/attachment.pdf')
    **/
   public function __construct($to, $from, $subject, $message, $attachments = array()) {
     $this->to = $to;
@@ -58,7 +49,7 @@ class AttachmentEmail {
       $message .= "--". $this->boundary . PHP_EOL;
       $message .= "Content-Transfer-Encoding: binary" . PHP_EOL;
       $message .= "Content-type:text/plain; charset=iso-8859-1" . PHP_EOL . PHP_EOL;
-      $message .= $this->message . PHP_EOL;
+      $message .= $this->message . PHP_EOL . PHP_EOL;
       $message .= $this->get_binary_attachments() . PHP_EOL;
       $message .= '--'. $this->boundary .'--' . PHP_EOL;
       $this->message = $message;
